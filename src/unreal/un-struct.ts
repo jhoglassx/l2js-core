@@ -413,8 +413,17 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
         const tokenHex = `0x${tokenValue.toString(16)}`;
 
-        const isNativeFunc = UNativeRegistry.hasNativeFunc(tokenValue);
-        const tokenName = isNativeFunc ? UNativeRegistry.getNativeFuncName(tokenValue) : ExprToken_T[tokenValue];
+        // Genesis H5 compatibility: Lineage II High Five script packages contain
+        // native-call token values which are not present in this registry. UE2 encodes
+        // every value >= MaxConversion as a native call, so the parser must follow the
+        // native-call layout even when the friendly function name is unknown.
+        const isRegisteredNativeFunc = UNativeRegistry.hasNativeFunc(tokenValue);
+        const isNativeFunc = tokenValue >= ExprToken_T.MaxConversion;
+        const tokenName = isRegisteredNativeFunc
+            ? UNativeRegistry.getNativeFuncName(tokenValue)
+            : isNativeFunc
+                ? `NativeToken_${tokenHex}`
+                : ExprToken_T[tokenValue];
 
         if (!tokenName) throw new Error(`Unknown token name: ${tokenValue}`);
 

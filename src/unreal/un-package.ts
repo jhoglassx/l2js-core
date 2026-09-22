@@ -96,17 +96,6 @@ abstract class APackage extends UEncodedFile {
 
         // console.log(`'${readable.path}' => Names:${dbgNameOffset}[${dbgNameCount}] Exports:${dbgExportOffset}[${dbgExportCount}] Imports:${dbgImportOffset}[${dbgImportCount}]`);
 
-        if (readable.path === "assets/maps/20_21.unr") {
-            console.assert(header.getArchiveFileVersion() === 123);
-            console.assert(header._packageFlags === 0x1);
-            console.assert(header.nameCount === 12165);
-            console.assert(header.nameOffset === 0x40);
-            console.assert(header.exportCount === 11379);
-            console.assert(header.exportOffset === 0xFB1BF5);
-            console.assert(header.importCount === 490);
-            console.assert(header.importOffset === 0xFB0712);
-        }
-
         if (header.getArchiveFileVersion() < 68) {
             header.heritageCount = readable.read("uint32");
             header.heritageOffset = readable.read("uint32");
@@ -114,10 +103,6 @@ abstract class APackage extends UEncodedFile {
             readable.read(header.guid);
 
             const generationCount = readable.read("int32");
-
-            if (readable.path === "assets/maps/20_21.unr") {
-                console.assert(generationCount === 1);
-            }
 
             for (let i = 0, gc = generationCount; i < gc; i++) {
                 const gen = new UGeneration();

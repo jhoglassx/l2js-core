@@ -183,7 +183,8 @@ function addImpExtension(ext: C.SupportedExtensions_T, ...classList: string[]) {
 }
 
 addImpExtension("UNR", "Level");
-addImpExtension("UTX", "Texture", "TexOscillator", "Shader", "ColorModifier", "FinalBlend", "TexEnvMap", "Combiner", "TexCoordSource", "TexPanner", "WetTexture", "TexRotator", "FadeColor", "ConstantColor", "VertexColor", "Cubemap");
+// High Five material packages may reference GlowModifier from UTX packages.
+addImpExtension("UTX", "Texture", "TexOscillator", "Shader", "ColorModifier", "FinalBlend", "TexEnvMap", "Combiner", "TexCoordSource", "TexPanner", "WetTexture", "TexRotator", "FadeColor", "ConstantColor", "VertexColor", "Cubemap", "GlowModifier");
 addImpExtension("UAX", "Sound");
 addImpExtension("USX", "StaticMesh");
 addImpExtension("UKX", "Animation", "SkeletalMesh", "VertMesh");
