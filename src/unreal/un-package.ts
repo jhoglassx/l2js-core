@@ -57,6 +57,17 @@ abstract class APackage extends UEncodedFile {
             className: string | null;
             outerName: string | null;
         }>;
+        nearbyCandidates: Array<{
+            exportIndex: number;
+            objectName: string;
+            className: string | null;
+            outerName: string | null;
+            score: number;
+        }>;
+        targetPackagePath: string | null;
+        targetArchiveVersion: number | null;
+        targetLicenseeVersion: number | null;
+        targetExportCount: number;
     }> = [];
 
     public constructor(loader: C.AAssetLoader, path: string) {
@@ -460,6 +471,14 @@ abstract class APackage extends UEncodedFile {
                     objectName,
                     groupName,
                     candidates: pkg.describeObjectCandidates(objectName),
+                    nearbyCandidates:
+                        pkg.describeNearbyObjectCandidates(objectName),
+                    targetPackagePath: pkg.path ?? null,
+                    targetArchiveVersion:
+                        pkg.header?.getArchiveFileVersion?.() ?? null,
+                    targetLicenseeVersion:
+                        pkg.header?.getLicenseeVersion?.() ?? null,
+                    targetExportCount: pkg.exports?.length ?? 0,
                 });
 
                 console.warn(`(${packageName}) [${className}, ${objectName}, ${groupName}] could not be resolved, treating as None`);
@@ -512,6 +531,99 @@ abstract class APackage extends UEncodedFile {
                     objectName: exp.objectName,
                     className,
                     outerName,
+                };
+            });
+    }
+
+    private describeNearbyObjectCandidates(objectName: string, limit: number = 20) {
+        const rawNeedle = String(objectName ?? "").toLowerCase();
+        const compactNeedle = rawNeedle.replace(/[^a-z0-9]+/g, "");
+        const tokens = rawNeedle
+            .split(/[^a-z0-9]+/g)
+            .filter(token => token.length >= 3);
+
+        const scoreName = (candidate: string) => {
+            const raw = String(candidate ?? "").toLowerCase();
+            const compact = raw.replace(/[^a-z0-9]+/g, "");
+            let score = 0;
+
+            if (compactNeedle && compact === compactNeedle)
+                score += 1000;
+
+            if (
+                compactNeedle
+                && compact
+                && (
+                    compact.includes(compactNeedle)
+                    || compactNeedle.includes(compact)
+                )
+            )
+                score += 200;
+
+            for (const token of tokens) {
+                if (raw.includes(token))
+                    score += 40;
+            }
+
+            const maxPrefix = Math.min(compactNeedle.length, compact.length);
+            let prefix = 0;
+            while (
+                prefix < maxPrefix
+                && compactNeedle[prefix] === compact[prefix]
+            )
+                prefix++;
+
+            score += prefix;
+
+            return score;
+        };
+
+        return this.exports
+            .map(exp => ({
+                exp,
+                score: scoreName(exp.objectName),
+            }))
+            .filter(item => item.score > 0)
+            .sort((a, b) => (
+                b.score - a.score
+                || a.exp.objectName.localeCompare(b.exp.objectName)
+                || a.exp.index - b.exp.index
+            ))
+            .slice(0, Math.max(0, limit))
+            .map(({ exp, score }) => {
+                let className: string | null = null;
+                try {
+                    if (exp.idClass !== 0) {
+                        const cls = this.fetchObject(exp.idClass) as any;
+                        className = (
+                            cls instanceof UClass
+                                ? cls.loadSelf().friendlyName
+                                : cls?.constructor?.friendlyName
+                                    ?? cls?.constructor?.name
+                                    ?? null
+                        );
+                    }
+                } catch {
+                    className = null;
+                }
+
+                let outerName: string | null = null;
+                try {
+                    if (exp.idPackage > 0) {
+                        outerName = this.exports[exp.idPackage - 1]?.objectName ?? null;
+                    } else if (exp.idPackage < 0) {
+                        outerName = this.imports[-exp.idPackage - 1]?.objectName ?? null;
+                    }
+                } catch {
+                    outerName = null;
+                }
+
+                return {
+                    exportIndex: exp.index,
+                    objectName: exp.objectName,
+                    className,
+                    outerName,
+                    score,
                 };
             });
     }
