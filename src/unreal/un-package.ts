@@ -44,6 +44,14 @@ abstract class APackage extends UEncodedFile {
 
     public readonly name: string;
     private loadingStack: number[] = [];
+    private unresolvedObjectReferences: Array<{
+        sourceObjectRef: number;
+        sourceObjectPath: string | null;
+        package: string;
+        className: string;
+        objectName: string;
+        groupName: string;
+    }> = [];
 
     public constructor(loader: C.AAssetLoader, path: string) {
         super(path);
@@ -314,6 +322,14 @@ abstract class APackage extends UEncodedFile {
         this.loadingStack.pop();
     }
 
+    public getUnresolvedObjectReferences() {
+        return this.unresolvedObjectReferences.map(item => ({ ...item }));
+    }
+
+    public clearUnresolvedObjectReferences() {
+        this.unresolvedObjectReferences.length = 0;
+    }
+
     public toString() { return `Package=(${this.path}, imports=${this.imports.length}, exports=${this.exports.length})`; }
 
     public getImportEntry(objref: number) {
@@ -416,7 +432,29 @@ abstract class APackage extends UEncodedFile {
             let obj = pkg.fetchObjectByType(className, objectName, groupName);
 
             if (obj === null) {
-                // ue treats unresolvable references as None
+                // UE treats unresolvable references as None. Preserve that
+                // runtime behavior, but also expose the occurrence so source
+                // migration tooling can account for actors/assets which would
+                // otherwise disappear silently.
+                const sourceObjectRef = this.getActiveObjectRef();
+                let sourceObjectPath: string | null = null;
+                if (sourceObjectRef !== 0) {
+                    try {
+                        sourceObjectPath = this.getObjectPath(sourceObjectRef);
+                    } catch {
+                        sourceObjectPath = null;
+                    }
+                }
+
+                this.unresolvedObjectReferences.push({
+                    sourceObjectRef,
+                    sourceObjectPath,
+                    package: packageName,
+                    className,
+                    objectName,
+                    groupName,
+                });
+
                 console.warn(`(${packageName}) [${className}, ${objectName}, ${groupName}] could not be resolved, treating as None`);
                 return null;
             }
