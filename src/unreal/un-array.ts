@@ -57,6 +57,31 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
             })() : null;
 
             this[i] = new (this.Constructor as any)().load(pkg, exp);
+
+            if (isFixedSize) {
+                const expectedElementEnd = elementOffset + elementSize;
+                const actualElementEnd = pkg.tell();
+
+                if (actualElementEnd > expectedElementEnd) {
+                    const ctorName = (
+                        (this.Constructor as any)?.friendlyName
+                        ?? (this.Constructor as any)?.name
+                        ?? "<unknown>"
+                    );
+                    throw new Error(
+                        "Fixed-size array element exceeded its slot"
+                        + `: property='${tag.name}'`
+                        + `, constructor='${ctorName}'`
+                        + `, index=${i}`
+                        + `, elementSize=${elementSize}`
+                        + `, consumed=${actualElementEnd - elementOffset}`
+                    );
+                }
+
+                if (actualElementEnd < expectedElementEnd) {
+                    pkg.seek(expectedElementEnd, "set");
+                }
+            }
         }
 
         if (hasTag) {
