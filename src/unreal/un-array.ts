@@ -33,7 +33,12 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
 
         const headerSize = hasTag ? pkg.tell() - beginIndex : null;
         const dataBytes = hasTag ? tag.dataSize - headerSize : null;
-        const isFixedSize = hasTag ? (dataBytes % this.length) === 0 : false;
+        const isDynamicElement = Boolean(
+            (this.Constructor as any)?.isDynamicClass
+        );
+        const isFixedSize = hasTag
+            ? !isDynamicElement && (dataBytes % this.length) === 0
+            : false;
         const elementSize = isFixedSize ? dataBytes / this.length : null;
 
         for (let i = 0, len = this.length; i < len; i++) {
