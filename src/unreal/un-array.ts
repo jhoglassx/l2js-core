@@ -59,7 +59,25 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
             this[i] = new (this.Constructor as any)().load(pkg, exp);
         }
 
-        if (hasTag) console.assert((pkg.tell() - beginIndex - tag.dataSize) === 0);
+        if (hasTag) {
+            const consumed = pkg.tell() - beginIndex;
+            if (consumed !== tag.dataSize) {
+                const ctorName = (
+                    (this.Constructor as any)?.friendlyName
+                    ?? (this.Constructor as any)?.name
+                    ?? "<unknown>"
+                );
+                throw new Error(
+                    "Array payload size mismatch"
+                    + `: property='${tag.name}'`
+                    + `, constructor='${ctorName}'`
+                    + `, count=${count}`
+                    + `, dataSize=${tag.dataSize}`
+                    + `, consumed=${consumed}`
+                    + `, delta=${consumed - tag.dataSize}`
+                );
+            }
+        }
 
         return this;
     }
