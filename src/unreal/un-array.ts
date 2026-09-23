@@ -37,10 +37,10 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
         const elementSize = isFixedSize ? dataBytes / this.length : null;
 
         for (let i = 0, len = this.length; i < len; i++) {
+            const elementOffset = pkg.tell();
+
             const exp = hasTag ? (function () {
                 const exp = new UExport();
-
-                const elementOffset = pkg.tell();
 
                 exp.index = -1;  // Fake exports don't have a real index
                 exp.idClass = 0;
