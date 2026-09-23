@@ -424,7 +424,32 @@ abstract class APackage extends UEncodedFile {
         } else if (objref < 0) {    // Import table object
 
             const entry = this.getImportEntry(objref);
+
+            if (entry.idPackage === 0) {
+                throw new Error(
+                    "Imported object has no package outer"
+                    + `: sourcePackage='${this.name}'`
+                    + `, objref=${objref}`
+                    + `, className='${entry.className}'`
+                    + `, classPackage='${entry.classPackage}'`
+                    + `, objectName='${entry.objectName}'`
+                    + `, idPackage=${entry.idPackage}`
+                );
+            }
+
             let entrypackage = this.getImportEntry(entry.idPackage);
+
+            if (!entrypackage) {
+                throw new Error(
+                    "Imported object package outer could not be resolved"
+                    + `: sourcePackage='${this.name}'`
+                    + `, objref=${objref}`
+                    + `, className='${entry.className}'`
+                    + `, classPackage='${entry.classPackage}'`
+                    + `, objectName='${entry.objectName}'`
+                    + `, idPackage=${entry.idPackage}`
+                );
+            }
 
             let groupName = "None";
             if (entrypackage.idPackage !== 0)
