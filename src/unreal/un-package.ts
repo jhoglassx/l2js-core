@@ -51,6 +51,12 @@ abstract class APackage extends UEncodedFile {
         className: string;
         objectName: string;
         groupName: string;
+        candidates: Array<{
+            exportIndex: number;
+            objectName: string;
+            className: string | null;
+            outerName: string | null;
+        }>;
     }> = [];
 
     public constructor(loader: C.AAssetLoader, path: string) {
@@ -453,6 +459,7 @@ abstract class APackage extends UEncodedFile {
                     className,
                     objectName,
                     groupName,
+                    candidates: pkg.describeObjectCandidates(objectName),
                 });
 
                 console.warn(`(${packageName}) [${className}, ${objectName}, ${groupName}] could not be resolved, treating as None`);
@@ -463,6 +470,50 @@ abstract class APackage extends UEncodedFile {
         }
 
         return null;
+    }
+
+    private describeObjectCandidates(objectName: string) {
+        const normalizeName = (value: string | null | undefined) =>
+            String(value ?? "").toLowerCase();
+        const objectKey = normalizeName(objectName);
+
+        return this.exports
+            .filter(exp => normalizeName(exp.objectName) === objectKey)
+            .map(exp => {
+                let className: string | null = null;
+                try {
+                    if (exp.idClass !== 0) {
+                        const cls = this.fetchObject(exp.idClass) as any;
+                        className = (
+                            cls instanceof UClass
+                                ? cls.loadSelf().friendlyName
+                                : cls?.constructor?.friendlyName
+                                    ?? cls?.constructor?.name
+                                    ?? null
+                        );
+                    }
+                } catch {
+                    className = null;
+                }
+
+                let outerName: string | null = null;
+                try {
+                    if (exp.idPackage > 0) {
+                        outerName = this.exports[exp.idPackage - 1]?.objectName ?? null;
+                    } else if (exp.idPackage < 0) {
+                        outerName = this.imports[-exp.idPackage - 1]?.objectName ?? null;
+                    }
+                } catch {
+                    outerName = null;
+                }
+
+                return {
+                    exportIndex: exp.index,
+                    objectName: exp.objectName,
+                    className,
+                    outerName,
+                };
+            });
     }
 
     public fetchObjectByType<T extends UObject>(className: string, objectName: string, groupName: string = "None") {
