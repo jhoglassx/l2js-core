@@ -18,6 +18,13 @@ class FArrayPrimitive<T extends PrimitiveArrayTypes_T> {
 
     public static forType<T extends PrimitiveArrayTypes_T>(dtype: C.ValidTypes_T<T>): new (...params: any) => FArrayPrimitive<T> {
         class FArrayPrimitiveExt extends FArrayPrimitive<T> {
+            public static readonly serializedVariableSize = (
+                dtype.name === "compat32"
+                || dtype.name === "char"
+                || dtype.name === "utf16"
+                || !Number.isFinite(dtype.bytes)
+            );
+
             constructor() { super(dtype); }
         }
 
