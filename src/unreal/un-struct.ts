@@ -826,6 +826,12 @@ function getDefaultValue(propName: string, property: UnProperties.UProperty, def
                 return defaultValue.map((x: UObject) => x?.nativeClone() ?? null);
 
             return defaultValue?.nativeClone() ?? null; // defaultproperties can set None
+        case UNP_PropertyTypes.UNP_ArrayProperty:
+            // UnrealScript dynamic arrays may appear in class defaultproperties.
+            // Preserve the source default container without sharing mutable state
+            // between constructed objects when the runtime array implementation
+            // provides nativeClone().
+            return defaultValue?.nativeClone?.() ?? defaultValue ?? null;
         default:
             debugger;
             throw new Error(`Property type '${property.getTypeName()}' not yet implemented.`)
