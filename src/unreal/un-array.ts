@@ -36,8 +36,15 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
         const isDynamicElement = Boolean(
             (this.Constructor as any)?.isDynamicClass
         );
+        const isVariableSizeElement = Boolean(
+            (this.Constructor as any)?.serializedVariableSize
+        );
         const isFixedSize = hasTag
-            ? !isDynamicElement && (dataBytes % this.length) === 0
+            ? (
+                !isDynamicElement
+                && !isVariableSizeElement
+                && (dataBytes % this.length) === 0
+            )
             : false;
         const elementSize = isFixedSize ? dataBytes / this.length : null;
 
