@@ -472,7 +472,17 @@ abstract class APackage extends UEncodedFile {
     }
 
     public findObjectRef(className: string, objectName: string, groupName: string = "None"): number {
-        const isClass = className == "Class";
+        // Unreal FName comparisons are case-insensitive. Imports in retail
+        // Lineage II packages do not always preserve the same capitalization
+        // used by the target package export table, so object/group/class
+        // resolution must compare canonicalized names rather than raw strings.
+        const normalizeName = (value: string | null | undefined) =>
+            String(value ?? "").toLowerCase();
+
+        const classKey = normalizeName(className);
+        const objectKey = normalizeName(objectName);
+        const groupKey = normalizeName(groupName);
+        const isClass = classKey === "class";
 
         if (!this.exportsByName || this.exportsByNameSource !== this.exports) {
             this.exportsByName = new Map();
@@ -483,29 +493,30 @@ abstract class APackage extends UEncodedFile {
         // exports can grow between calls (registerNativeClass pushes while resolving), only index the newly appended ones
         for (let i = this.exportsByNameCount, len = this.exports.length; i < len; i++) {
             const exp = this.exports[i];
-            const list = this.exportsByName.get(exp.objectName);
+            const key = normalizeName(exp.objectName);
+            const list = this.exportsByName.get(key);
 
             if (list) list.push(exp);
-            else this.exportsByName.set(exp.objectName, [exp]);
+            else this.exportsByName.set(key, [exp]);
         }
 
         this.exportsByNameCount = this.exports.length;
 
-        const candidates = this.exportsByName.get(objectName) ?? [];
+        const candidates = this.exportsByName.get(objectKey) ?? [];
 
         for (const exp of candidates) {
-            if (groupName !== "None") {
+            if (groupKey !== "none") {
                 if (exp.idPackage > 0) {
                     const pkg = this.exports[exp.idPackage - 1];
 
-                    if (pkg && groupName !== pkg.objectName) {
+                    if (pkg && groupKey !== normalizeName(pkg.objectName)) {
                         continue;
                     }
 
                 } else if (exp.idPackage < 0) {
                     const outer = this.imports[-exp.idPackage - 1];
 
-                    if (outer && groupName !== outer.objectName) {
+                    if (outer && groupKey !== normalizeName(outer.objectName)) {
                         continue;
                     }
 
@@ -518,15 +529,15 @@ abstract class APackage extends UEncodedFile {
                 if (exp.idClass > 0) {
                     const other = this.exports[exp.idClass + 1];
 
-                    if (other && className === other.objectName)
+                    if (other && classKey === normalizeName(other.objectName))
                         return exp.index + 1;
 
                     debugger;
                 } else if (exp.idClass < 0) {
                     const clsImport = this.imports[-exp.idClass - 1];
 
-                    if (clsImport && objectName === clsImport.objectName) {
-                        if (clsImport.classPackage === "Native")
+                    if (clsImport && objectKey === normalizeName(clsImport.objectName)) {
+                        if (normalizeName(clsImport.classPackage) === "native")
                             return -(clsImport.index + 1);
 
                         return exp.index + 1;
@@ -543,7 +554,11 @@ abstract class APackage extends UEncodedFile {
                     if (!inheritenceChain)
                         debugger;
 
-                    if (inheritenceChain.includes(className))
+                    if (
+                        inheritenceChain.some(
+                            name => normalizeName(name) === classKey
+                        )
+                    )
                         return exp.index + 1;
                 }
             }
