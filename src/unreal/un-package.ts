@@ -464,6 +464,38 @@ abstract class APackage extends UEncodedFile {
 
             const pkg = this.loader.getPackage(packageName, className);
 
+            if (!pkg) {
+                const sourceObjectRef = this.getActiveObjectRef();
+                let sourceObjectPath: string | null = null;
+                if (sourceObjectRef !== 0) {
+                    try {
+                        sourceObjectPath = this.getObjectPath(sourceObjectRef);
+                    } catch {
+                        sourceObjectPath = null;
+                    }
+                }
+
+                this.unresolvedObjectReferences.push({
+                    sourceObjectRef,
+                    sourceObjectPath,
+                    package: packageName,
+                    className,
+                    objectName,
+                    groupName,
+                    candidates: [],
+                    nearbyCandidates: [],
+                    targetPackagePath: null,
+                    targetArchiveVersion: null,
+                    targetLicenseeVersion: null,
+                    targetExportCount: 0,
+                });
+
+                console.warn(
+                    `(${packageName}) [${className}, ${objectName}, ${groupName}] package is unavailable, treating as None`
+                );
+                return null;
+            }
+
             if (!pkg.isDecoded()) throw new Error(`Package must be decoded: '${packageName}'`);
 
             if (pkg.isNative && className === "State" && objectName === "State" && groupName === "None") {
