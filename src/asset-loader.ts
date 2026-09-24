@@ -213,6 +213,13 @@ function getPackage<T extends string | "native", TPackage, TCorePackage, TEngine
         return null;
     }
 
+    if (!packages) {
+        console.warn(
+            `Package '${pkgName}' for type '${impType}' does not exist, treating dependency as unresolved`
+        );
+        return null;
+    }
+
     let pkg: TPackage | TNativePackage | TCorePackage | TEnginePackage = null;
 
     for (const ext of validExts) {
