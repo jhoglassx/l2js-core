@@ -80,6 +80,19 @@ abstract class AAssetLoader<
         return pkg;
     }
 
+    public tryGetPackage(
+        pkgName: string,
+        impType: string,
+    ): TPackage | TCorePackage | TEnginePackage | TNativePackage | null {
+        return getPackage<
+            string,
+            TPackage,
+            TCorePackage,
+            TEnginePackage,
+            TNativePackage
+        >(this.packages, pkgName, impType);
+    }
+
     public hasPackage(pkgName: string, impType: string) {
         if (!this.packages.has(pkgName.toLowerCase())) return false;
 
