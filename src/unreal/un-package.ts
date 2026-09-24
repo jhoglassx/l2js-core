@@ -462,7 +462,10 @@ abstract class APackage extends UEncodedFile {
             const objectName = entry.objectName;
             const className = entry.className;
 
-            const pkg = this.loader.getPackage(packageName, className);
+            const pkg = this.loader.tryGetPackage(
+                packageName,
+                className,
+            );
 
             if (!pkg) {
                 const sourceObjectRef = this.getActiveObjectRef();
